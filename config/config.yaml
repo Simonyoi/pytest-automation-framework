@@ -15,7 +15,7 @@ api:
   timeout: 30                           # 请求超时(秒)
   retries: 2                            # 超时/连接失败/5xx 重试次数(429 是配额信号，不重试)
   backoff: 1                            # 重试退避基数(秒)，第 n 次重试等待 backoff*n
-  api_key: ""                           # 可选：优先读环境变量 REQRES_API_KEY；填这里也可，但不要提交到 git
+  api_key: ""                           # 可选：优先读环境变量 REQRES_API_KEY；
 
 # ============ 日志配置 ============
 log:
