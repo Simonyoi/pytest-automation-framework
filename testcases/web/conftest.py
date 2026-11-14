@@ -65,6 +65,12 @@ def _build_options(browser, headless):
     options.add_argument(f"--user-data-dir={profile_dir}")
     return options
 
+def _env_bool(name, default):
+    """读布尔型环境变量：没设置就用默认值，设置了就按 1/true/yes/on 判断为真"""
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in ("1", "true", "yes", "on")
 
 @pytest.fixture(scope="session", autouse=True)
 def _cleanup_browser_profile():
@@ -76,8 +82,8 @@ def _cleanup_browser_profile():
 
 @pytest.fixture(scope="function")
 def driver(logger):
-    browser = config.get("web", "browser", default="edge").lower()
-    headless = config.get("web", "headless", default=False)
+    browser = os.getenv("WEB_BROWSER", "").strip().lower() or config.get("web", "browser", default="edge").lower()
+    headless = _env_bool("WEB_HEADLESS", config.get("web", "headless", default=False))
     logger.info("启动浏览器 browser=%s headless=%s", browser, headless)
 
     options = _build_options(browser, headless)
@@ -87,10 +93,10 @@ def driver(logger):
         if not headless:
             drv.maximize_window()
 
-            # 每条用例都从干净状态开始：清掉上一条用例留在同一个 profile 里的购物车/登录态
-            drv.get(config.get("web", "base_url"))
-            drv.execute_script("window.localStorage.clear(); window.sessionStorage.clear();")
-            drv.delete_all_cookies()
+        # 每条用例都从干净状态开始：清掉上一条用例留在同一个 profile 里的购物车/登录态
+        drv.get(config.get("web", "base_url"))
+        drv.execute_script("window.localStorage.clear(); window.sessionStorage.clear();")
+        drv.delete_all_cookies()
             
         yield drv
     finally:

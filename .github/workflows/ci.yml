@@ -1,0 +1,53 @@
+name: 自动化测试 CI
+
+# ① 什么时候跑
+on:
+  push:
+    branches: [ main ]      # 推 main 就跑
+  pull_request:             # 提 PR 也跑
+  workflow_dispatch:        # 允许在网页上手动点按钮跑
+
+jobs:
+  test:
+    runs-on: windows-latest      # ② Windows 自带 Edge，最省事
+    timeout-minutes: 30          # 防止卡死一直挂着
+
+    # ③ 环境变量：让代码在 CI 里切到无头 + 用 secret
+    env:
+      WEB_HEADLESS: "true"
+      WEB_BROWSER: "edge"
+      REQRES_API_KEY: ${{ secrets.REQRES_API_KEY }}
+      PYTHONIOENCODING: "utf-8"   # 防止中文日志乱码
+
+    steps:
+      # ④ 把仓库代码拉到 runner 上
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      # ⑤ 装 Python（带 pip 缓存，第二次起会快很多）
+      - name: 安装 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      # ⑥ 装依赖
+      - name: 安装依赖
+        run: pip install -r requirements.txt
+
+      # ⑦ 跑测试（用 python -m 避免 PATH 问题）
+      - name: 运行测试
+        run: python -m pytest -v
+
+      # ⑧ 不管成功失败都上传产物，失败时才有东西可查
+      - name: 上传测试产物
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-artifacts
+          path: |
+            reports/html/
+            reports/allure_results/
+            logs/
+            screenshots/
+          if-no-files-found: ignore
