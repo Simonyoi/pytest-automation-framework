@@ -1,5 +1,7 @@
 # Pytest 自动化测试框架（接口 + Web UI 双方向）
 
+[![自动化测试 CI](https://github.com/Simonyoi/pytest-automation-framework/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Simonyoi/pytest-automation-framework/actions/workflows/ci.yml)
+
 基于 **Pytest + Selenium + Requests + Allure** 搭建的自动化测试框架，采用分层架构（数据层 / 服务层与页面对象层 / 用例层），覆盖**接口自动化**和 **Web UI 自动化**两个方向。
 
 ## 技术栈
