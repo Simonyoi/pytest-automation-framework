@@ -1,0 +1,13 @@
+# 注册接口测试数据
+# 注意：reqres 的 /register 只有"已定义用户"才注册成功，所以成功用例用 eve.holt@reqres.in
+register_cases:
+  - name: 注册成功
+    email: eve.holt@reqres.in
+    password: pistol
+    expect_code: 200
+    expect_token: true
+  - name: 缺少密码
+    email: sydney@fife
+    password: ""
+    expect_code: 400
+    expect_token: false

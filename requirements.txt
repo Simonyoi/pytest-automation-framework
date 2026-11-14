@@ -1,0 +1,9 @@
+# Web UI 自动化 + 接口自动化框架依赖（锁定为已验证版本组合，保证换机器可复现）
+# 版本约束：pythonpath 需要 pytest>=7；--headless=new 需要 selenium>=4.8
+pytest==9.2.0
+selenium==4.52.0
+requests==2.34.2
+PyYAML==6.0.3
+allure-pytest==2.16.2
+pytest-html==4.2.0
+pytest-xdist==3.8.0

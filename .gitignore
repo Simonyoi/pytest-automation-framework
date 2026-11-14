@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.cache/
+logs/
+reports/
+screenshots/
+allure_report/
+.idea/
+.venv/
+venv/
+.env
+*.log
+# 浏览器 profile 残留
+sel_prof_c/

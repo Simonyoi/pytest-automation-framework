@@ -1,0 +1,17 @@
+# 接口登录测试数据
+login_cases:
+  - name: 登录成功
+    email: eve.holt@reqres.in
+    password: cityslicka
+    expect_code: 200
+    expect_token: true
+  - name: 缺少密码
+    email: eve.holt@reqres.in
+    password: ""
+    expect_code: 400
+    expect_token: false
+  - name: 用户不存在
+    email: notexist@reqres.in
+    password: cityslicka
+    expect_code: 400
+    expect_token: false

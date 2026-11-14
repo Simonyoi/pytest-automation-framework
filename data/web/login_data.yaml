@@ -1,0 +1,14 @@
+# Web UI 登录测试数据
+login_cases:
+  - name: 登录成功
+    username: standard_user
+    password: secret_sauce
+    expect: success
+  - name: 密码错误
+    username: standard_user
+    password: wrong_password
+    expect: error
+  - name: 账号被锁定
+    username: locked_out_user
+    password: secret_sauce
+    expect: error
