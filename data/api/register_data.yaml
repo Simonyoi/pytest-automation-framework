@@ -11,3 +11,19 @@ register_cases:
     password: ""
     expect_code: 400
     expect_token: false
+  # 以下为补充的负向数据：必填校验与邮箱格式覆盖
+  - name: 缺少邮箱
+    email: ""
+    password: pistol
+    expect_code: 400
+    expect_token: false
+  - name: 邮箱密码均为空
+    email: ""
+    password: ""
+    expect_code: 400
+    expect_token: false
+  - name: 邮箱格式非法
+    email: not-an-email
+    password: pistol
+    expect_code: 400
+    expect_token: false

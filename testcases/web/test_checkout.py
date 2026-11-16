@@ -44,14 +44,23 @@ class TestCheckout:
         assert "Thank you for your order" in header, f"未进入订单完成页: {header}"
 
     @allure.story("结算必填校验")
-    def test_checkout_missing_first_name(self, driver):
-        """不填任何信息直接继续 → 应提示缺少姓名"""
+    @pytest.mark.parametrize(
+        "first_name, last_name, postal_code, expect_msg",
+        [
+            pytest.param("", "", "", "First Name is required", id="缺少姓名"),
+            pytest.param("测试", "", "", "Last Name is required", id="缺少姓氏"),
+            pytest.param("测试", "用户", "", "Postal Code is required", id="缺少邮编"),
+        ],
+    )
+    def test_checkout_missing_field(self, driver, first_name, last_name, postal_code, expect_msg):
+        """三个必填项分别缺失 → 应提示对应字段必填"""
         self._prepare_cart(driver)
         CartPage(driver).checkout()
 
         page = CheckoutPage(driver)
         page.wait_step_one()
-        page.click(page.CONTINUE_BTN)          # 什么都不填，直接点继续
+        page.fill_info(first_name, last_name, postal_code)
+        page.click(page.CONTINUE_BTN)
 
         error = page.get_error()
-        assert "First Name is required" in error, f"未提示缺少姓名: {error}"
+        assert expect_msg in error, f"未提示 {expect_msg}: {error}"

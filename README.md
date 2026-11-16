@@ -52,12 +52,14 @@ pytest_project/
 │   ├── api/
 │   │   ├── __init__.py
 │   │   ├── conftest.py       #   配置/服务层 fixture + 数据集探测
+│   │   ├── test_auth_api.py      #   鉴权（无效 api-key）
 │   │   ├── test_login_api.py
 │   │   ├── test_register_api.py
 │   │   └── test_user_crud.py
 │   └── web/
 │       ├── __init__.py
 │       ├── conftest.py       #   driver fixture + 失败截图（setup/call）
+│       ├── test_auth_guard.py    #   未登录访问受保护页
 │       ├── test_login.py
 │       ├── test_inventory.py
 │       ├── test_cart.py
@@ -94,7 +96,7 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 ## 接口配额与 API Key（可选）
 
-reqres.in 匿名 demo **按 IP 限流 40 次/天**，本套用例单次全量约消耗 19 次请求，反复运行会触发 429；注册免费账号（约 **250 次/天**）并注入 key 可缓解。任选一种方式：
+reqres.in 匿名 demo **按 IP 限流 40 次/天**，本套用例单次全量约消耗 27 次请求，反复运行会触发 429；注册免费账号（约 **250 次/天**）并注入 key 可缓解。任选一种方式：
 
 ```powershell
 # 方式一：环境变量（推荐，key 不进 git）
@@ -121,7 +123,7 @@ pytest testcases/api
 # 只跑 Web UI 方向
 pytest testcases/web
 
-# 冒烟测试（登录/列表/创建/加购/结算/排序 6 条主链路，展开为 9 个用例）
+# 冒烟测试（登录/分页列表/创建/加购/排序/结算 7 条主链路，共 8 个用例）
 pytest -m smoke
 
 # 并行执行（仅建议用于接口方向；Web 方向会同时开多个浏览器）
@@ -147,30 +149,35 @@ allure open reports/allure_report
 
 ## 测试覆盖
 
-共 **25 条**用例（接口 16 + Web 9）。
+共 **42 条**用例（接口 25 + Web 17），由 21 个测试函数经参数化展开。
 
 **接口方向（reqres.in）**
-- 登录：成功 / 缺少密码 / 用户不存在（数据驱动，3 条）
-- 注册：成功 / 缺少密码（数据驱动，2 条）
+- 登录：成功 / 缺少密码 / 缺少邮箱 / 邮箱密码均为空 / 用户不存在 / 邮箱格式非法 / 邮箱超长 / 邮箱含非法字符（数据驱动，8 条）
+- 注册：成功 / 缺少密码 / 缺少邮箱 / 邮箱密码均为空 / 邮箱格式非法（数据驱动，5 条）
+- 鉴权：无效 api-key 应返回 403 且错误码为 `invalid_api_key`，不放行（1 条）
 - 用户 CRUD：列表分页(第 1/2 页)、查询单个、查询不存在(404)、创建(201)、更新、删除(204)、分页元信息自洽、分页数据不重叠、用户字段完整性、响应头 Content-Type（11 条）
 - 用例中的用户 id 由 `user_dataset` 探测到的数据集推导，数据规模变化时无需改代码
 
 **Web UI 方向（saucedemo.com）**
-- 登录：成功 / 密码错误 / 账号锁定（数据驱动，3 条）
-- 商品列表：按价格升序排序（1 条）
+- 登录：成功 / 密码错误 / 账号锁定 / 用户名为空 / 密码为空（数据驱动，5 条）
+- 权限：未登录直接访问 `/inventory.html`，应被重定向回登录页并提示（1 条）
+- 商品列表：价格升序 / 价格降序 / 名称升序 / 名称降序（4 条）
 - 购物车：加购（角标+数量校验） / 移除 / 多商品加购角标累加（3 条）
-- 结算：主流程（填信息 → 确认总价 → 完成页） / 缺少姓名必填校验（2 条）
+- 结算：主流程（填信息 → 确认总价 → 完成页） / 姓名、姓氏、邮编三项必填校验（4 条）
+
+**冒烟集**：8 条（两个方向的登录成功、分页列表 2 页、创建用户、价格升序、加购、结算主流程）。冒烟标记由数据层 `smoke` 字段声明，新增负向数据不会污染冒烟集。
 
 ## 项目亮点
 
 1. **POM + 服务层**：页面/接口操作与用例解耦，可维护性强
-2. **数据驱动**：`pytest.mark.parametrize` + yaml 数据，一条用例跑多组数据
+2. **数据驱动**：`pytest.mark.parametrize` + yaml 数据，一条用例跑多组数据；冒烟标记由数据层 `smoke` 字段声明，负向数据不进冒烟集
 3. **三层 fixture**：根级 / 接口 / Web 分层管理，作用域按“配置 session、实例 function、数据集 session”约定
 4. **工程化容错**：失败自动截图（setup/call 双阶段）、显式等待（替代 time.sleep）、异常重试、5xx 退避重试、日志落地
 5. **可复现**：requirements 锁定已验证版本，`--clean-alluredir` 保证报告不串数据
 6. **双报告**：Allure + pytest-html
 7. **数据自洽**：用例 id 从被测数据集推导，不用魔法数字
 8. **业务全链路**：Web 覆盖登录 → 商品列表（排序）→ 购物车（加购/移除）→ 结算（含必填校验）完整电商主流程
+9. **权限与鉴权覆盖**：接口侧验证无效 api-key 被 403 拒绝而非放行，Web 侧验证未登录直连受保护页会被重定向回登录页并给出提示
 
 ## 健壮性设计
 
@@ -190,7 +197,7 @@ allure open reports/allure_report
 
 ## 已知限制
 
-- 接口依赖 reqres.in 公共 demo，**匿名配额仅 40 次/天**（按 IP 计）。本套用例单次全量约消耗 19 次请求，超配额会返回 429；注册免费账号（约 250 次/天）并设置 `REQRES_API_KEY` 环境变量可缓解，步骤见「接口配额与 API Key」。
+- 接口依赖 reqres.in 公共 demo，**匿名配额仅 40 次/天**（按 IP 计）。本套用例单次全量约消耗 27 次请求，超配额会返回 429；注册免费账号（约 250 次/天）并设置 `REQRES_API_KEY` 环境变量可缓解，步骤见「接口配额与 API Key」。
 - Web 方向依赖真实浏览器与网络：首次运行由 Selenium Manager 下载匹配驱动到 `.cache/selenium/`，**离线环境不可用**。
 - reqres 的写接口（创建/更新/删除）不真正持久化数据，因此不做“写后读”一致性断言，只校验响应契约。
 
@@ -200,7 +207,10 @@ allure open reports/allure_report
 
 | 命令 | 结果 |
 |------|------|
-| `pytest testcases/api -q` | 16 passed（配额充足时，约 2-3 分钟，受 demo 限流影响） |
-| `pytest testcases/web -q` | 9 passed（约 1 分钟） |
-| `pytest -m smoke --collect-only -q` | 9/25 用例被选中（markers 生效） |
+| `pytest testcases/api -q` | 25 passed（分两批执行验证：登录/注册/鉴权 14 + CRUD 11，全绿；单次约 27 次请求） |
+| `pytest --collect-only -q` | 42 tests collected |
+| `pytest -m smoke --collect-only -q` | 8/42 用例被选中（markers 生效） |
+| `pytest testcases/web -q` | 17 条，**待复跑**（见下方说明）；补齐前为 9 passed / 约 1 分钟 |
 | `pytest -q` | 配额耗尽时后段用例会返回 429，需配置 `api_key` 后复跑 |
+
+> 说明：本次新增 Web 用例 8 条（排序降序/名称双向、结算三字段必填、未登录访问拦截），补齐时所在会话无法启动 Edge（`session not created: ... crashed`，最小化启动脚本同样复现，与项目代码无关），故 Web 方向未复跑。请在桌面会话执行 `pytest testcases/web -q` 确认；若排序断言失败，优先核对 `pages/home_page.py` 的 `sort_by` 与页面实际排序选项值（az/za/lohi/hilo）。

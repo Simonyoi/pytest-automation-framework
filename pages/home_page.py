@@ -1,5 +1,6 @@
 """商品列表页(登录后首页)页面对象"""
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import Select
 
 from common.base_page import BasePage
 
@@ -43,6 +44,11 @@ class HomePage(BasePage):
     def sort_by(self, value):
         """排序：az 名称升序 / za 名称降序 / lohi 价格升序 / hilo 价格降序"""
         self.wait_loaded()
+        select_el = self.wait_visible(self.SORT_SELECT)
+        # 当前已经是目标排序时，首元素不会变化，再等"重排完成"只会白等到超时
+        if Select(select_el).first_selected_option.get_attribute("value") == value:
+            self.logger.info("当前排序已是 %s，跳过重排等待", value)
+            return
         first_before = self.driver.find_element(*self.ITEM_NAME).text
         self.select_by_value(self.SORT_SELECT, value)
         # 等列表重排完成：第一个商品名变了，说明 DOM 已经重新渲染
@@ -52,6 +58,11 @@ class HomePage(BasePage):
         """返回所有商品价格（float，已去掉 $ 符号）"""
         self.wait_loaded()
         return [float(el.text.replace("$", "")) for el in self.driver.find_elements(*self.ITEM_PRICE)]
+
+    def get_names(self):
+        """返回所有商品名称（按当前列表顺序）"""
+        self.wait_loaded()
+        return [el.text for el in self.driver.find_elements(*self.ITEM_NAME)]
 
     def add_item_by_index(self, index):
         """加购列表中第 index 个商品（从 0 开始）"""

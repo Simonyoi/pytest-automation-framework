@@ -17,14 +17,31 @@ class TestInventory:
         LoginPage(driver).login(acct["username"], acct["password"])
         HomePage(driver).wait_url_contains("/inventory.html")
 
-    @allure.story("按价格从低到高排序")
-    @pytest.mark.smoke
-    def test_sort_price_asc(self, driver):
+    @allure.story("商品排序")
+    @pytest.mark.parametrize(
+        "sort_value, expect",
+        [
+            pytest.param("lohi", "price_asc", id="价格升序", marks=pytest.mark.smoke),
+            pytest.param("hilo", "price_desc", id="价格降序"),
+            pytest.param("az", "name_asc", id="名称升序"),
+            pytest.param("za", "name_desc", id="名称降序"),
+        ],
+    )
+    def test_sort(self, driver, sort_value, expect):
+        """四个排序方向分别校验：价格升/降、名称升/降"""
         self._login(driver)
         home = HomePage(driver)
+        home.sort_by(sort_value)
 
-        home.sort_by("lohi")
-        prices = home.get_prices()
+        if expect.startswith("price"):
+            values = home.get_prices()
+            assert values, "商品列表为空，无法验证排序"
+            expected = sorted(values) if expect == "price_asc" else sorted(values, reverse=True)
+            label = "价格"
+        else:
+            values = home.get_names()
+            assert values, "商品列表为空，无法验证排序"
+            expected = sorted(values) if expect == "name_asc" else sorted(values, reverse=True)
+            label = "名称"
 
-        assert prices, "商品列表为空，无法验证排序"
-        assert prices == sorted(prices), f"价格未按升序排列: {prices}"
+        assert values == expected, f"{label}排序不符({expect}): {values}"

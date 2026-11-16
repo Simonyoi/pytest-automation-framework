@@ -1,9 +1,11 @@
 # Web UI 登录测试数据
+# smoke: true 的行进入冒烟集，只有正常主流程，负向用例不占冒烟时间
 login_cases:
   - name: 登录成功
     username: standard_user
     password: secret_sauce
     expect: success
+    smoke: true
   - name: 密码错误
     username: standard_user
     password: wrong_password
@@ -11,4 +13,13 @@ login_cases:
   - name: 账号被锁定
     username: locked_out_user
     password: secret_sauce
+    expect: error
+  # 以下为补充的必填校验数据
+  - name: 用户名为空
+    username: ""
+    password: secret_sauce
+    expect: error
+  - name: 密码为空
+    username: standard_user
+    password: ""
     expect: error

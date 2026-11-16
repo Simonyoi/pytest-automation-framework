@@ -1,10 +1,12 @@
 # 接口登录测试数据
+# smoke: true 的行会进入冒烟集（pytest -m smoke），由数据层声明，避免函数级 marker 把所有负向数据一起拉进去
 login_cases:
   - name: 登录成功
     email: eve.holt@reqres.in
     password: cityslicka
     expect_code: 200
     expect_token: true
+    smoke: true
   - name: 缺少密码
     email: eve.holt@reqres.in
     password: ""
@@ -12,6 +14,32 @@ login_cases:
     expect_token: false
   - name: 用户不存在
     email: notexist@reqres.in
+    password: cityslicka
+    expect_code: 400
+    expect_token: false
+  # 以下为补充的负向/边界数据：必填校验与邮箱格式、长度覆盖
+  - name: 缺少邮箱
+    email: ""
+    password: cityslicka
+    expect_code: 400
+    expect_token: false
+  - name: 邮箱密码均为空
+    email: ""
+    password: ""
+    expect_code: 400
+    expect_token: false
+  - name: 邮箱格式非法
+    email: not-an-email
+    password: cityslicka
+    expect_code: 400
+    expect_token: false
+  - name: 邮箱超长
+    email: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@reqres.in
+    password: cityslicka
+    expect_code: 400
+    expect_token: false
+  - name: 邮箱含非法字符
+    email: user@@reqres.in
     password: cityslicka
     expect_code: 400
     expect_token: false
